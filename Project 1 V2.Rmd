@@ -1,0 +1,99 @@
+---
+title: "Project 1"
+author: "Nayana Menon, Tyler Echols"
+date: "6/21/2022"
+output:
+  word_document: default
+html_document:
+  df_print: paged
+pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+rm(list=ls()) # this is used to clear all variables from memory before starting with this program.
+
+if (!require("caret"))
+  install.packages("caret")
+if (!require("tictoc"))
+  install.packages("tictoc")
+if (!require("e1071"))
+  install.packages("e1071")
+
+library("e1071")
+library("caret")
+library("tictoc")
+
+set.seed(1234)
+```
+
+# Load and split Titanic CSV into train and test.
+```{r pressure, echo=FALSE}
+data_titanic <- read.csv("titanic_project.csv", header=TRUE, stringsAsFactors=FALSE)
+data_titanic$pclass <- as.factor(data_titanic$pclass) # passenger classes are 1,2,3
+data_titanic$survived <- as.factor(data_titanic$survived) # survived = 1, not survived = 0
+data_titanic$sex <- as.factor(data_titanic$sex) # male = 1, female = 0
+str(data_titanic)
+head (data_titanic)
+
+sapply(data_titanic, function(x) sum(is.na(x) == TRUE)) # check if any column has NA's. Looks like no NA's
+
+# split the dataset into 900 train and rest test. Total number of rows = 1046
+set.seed(1234)
+df_titanic_split = sample( c(rep(0, 0.86 * nrow(data_titanic)),  c(rep(1, 0.14 * nrow(data_titanic))) ))
+df_titanic_train <- data_titanic[df_titanic_split==0,]
+df_titanic_test <- data_titanic[df_titanic_split==1,]
+```
+
+# Training with NaiveBayes
+  - The prior probabilities of not survived = 0.5951057 and that of survived = 0.4048943
+  - The conditional probabilities are next given for Passenger class, sex and age against the response Survived or Not Survived.
+  - y = 0 for not survived and y = 1 is generally for survived.
+```{r}
+tic("naive Bayes time taken: ")
+nb1 <- naiveBayes(survived~pclass+sex+age, data=df_titanic_train)
+toc()
+nb1
+```
+
+# The confusion matrix and accurancy of 0.77 is calcualted below which is better than what we did for Logistic Regression.
+```{r}
+p1 <- predict (nb1, newdata=df_titanic_test, type="class")
+conf_matrix <- table(p1, df_titanic_test$survived) 
+acc <- mean(p1==df_titanic_test$survived)
+cat ("Conf matrix: ")
+conf_matrix
+cat("Accurancy : ", acc)
+```
+
+# sensitivity and specificity
+```{r}
+sensitivity(conf_matrix)
+specificity(conf_matrix)
+```
+
+# create 2+ graphs and run 4+ data explorations functions
+```{r}
+par(mfrow=c(1,2))
+plot(data_titanic$survived,data_titanic$pclass, main="Survived (Class Level)", ylab="")
+plot(data_titanic$survived,data_titanic$sex, main="Survived (Male Vs Female)", ylab="")
+```
+# Conditional Density Plots
+```{r}
+par(mfrow=c(2,2))
+cdplot(data_titanic$survived~data_titanic$pclass)
+cdplot(data_titanic$survived~data_titanic$sex)
+cdplot(data_titanic$survived~data_titanic$age)
+cdplot(data_titanic$sex~data_titanic$age)
+```
+
+
